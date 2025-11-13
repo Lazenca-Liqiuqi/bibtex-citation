@@ -10,7 +10,7 @@ Requires the [Typora Community Plugin Framework](https://github.com/typora-commu
 ```bash
 cd ~/.config/Typora/plugins/plugins/
 git clone https://github.com/adam-coates/typora-plugin-zotero
-cd zotero-citation
+cd typora-plugin-zotero
 ```
 
 
@@ -28,7 +28,7 @@ Once Zotero and better bibtex for zotero is setup then you should expect to find
 Currently this plugin is not part of the typora-community-plugin repository. This means that you need to install the dependencies: 
 
 ```bash
-cd ~/.config/Typora/plugins/plugins/zotero-citation
+cd ~/.config/Typora/plugins/plugins/typora-plugin-zotero
 npm install
 ```
 
