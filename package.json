@@ -1,0 +1,17 @@
+{
+  "name": "zotero-citation",
+  "version": "1.0.0",
+  "description": "Typora Zotero Citation Plugin",
+  "main": "main.js",
+  "scripts": {},
+  "dependencies": {
+    "better-sqlite3": "^12.4.1",
+    "sql.js": "^1.13.0"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "electron-rebuild": "^3.2.9"
+  }
+}
