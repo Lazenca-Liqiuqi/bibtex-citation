@@ -10,16 +10,16 @@ const PATH_BASE_MODE = {
   ABSOLUTE: "absolute",
 };
 
-// 兼容旧版字符串设置，并统一为数组形式
-function normalizeBibFileList(value) {
-  if (Array.isArray(value)) {
-    return value.map((item) => String(item || "").trim()).filter(Boolean);
-  }
-
+// 设置层继续使用字符串存储，避免宿主对复杂结构兼容性不一致
+function parseBibFileList(value) {
   return String(value || "")
     .split(/[\r\n,;]+/)
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function serializeBibFileList(items) {
+  return items.map((item) => String(item || "").trim()).filter(Boolean).join("\n");
 }
 
 function getActiveMarkdownPath() {
@@ -199,15 +199,23 @@ class BibCitationSettingTab extends SettingTab {
     this.addSetting((s) => {
       s.addName(t.settings.pathBase.name);
       s.addDescription(t.settings.pathBase.desc);
-      s.addDropdown((dropdown) => {
-        dropdown.addOption(
-          PATH_BASE_MODE.MARKDOWN,
-          t.settings.pathBase.markdown,
-        );
-        dropdown.addOption(PATH_BASE_MODE.TYPORA, t.settings.pathBase.typora);
-        dropdown.addOption(PATH_BASE_MODE.ABSOLUTE, t.settings.pathBase.absolute);
-        dropdown.setValue(plugin.settings.get("pathBase"));
-        dropdown.onChange((value) => {
+      s.addSelect((select) => {
+        const options = [
+          [PATH_BASE_MODE.MARKDOWN, t.settings.pathBase.markdown],
+          [PATH_BASE_MODE.TYPORA, t.settings.pathBase.typora],
+          [PATH_BASE_MODE.ABSOLUTE, t.settings.pathBase.absolute],
+        ];
+        const selectEl = $(select);
+        options.forEach(([value, label]) => {
+          selectEl.append(
+            $("<option>")
+              .attr("value", value)
+              .text(label),
+          );
+        });
+        selectEl.val(plugin.settings.get("pathBase"));
+        selectEl.on("change", (event) => {
+          const value = $(event.target).val();
           plugin.settings.set("pathBase", value);
           plugin.resetCache();
           this.render();
@@ -225,7 +233,7 @@ class BibCitationSettingTab extends SettingTab {
     listHost.className = "bibtex-setting-list";
     container.appendChild(listHost);
 
-    const bibFiles = normalizeBibFileList(plugin.settings.get("bibFiles"));
+    const bibFiles = parseBibFileList(plugin.settings.get("bibFiles"));
     if (!bibFiles.length) {
       const emptyState = document.createElement("div");
       emptyState.className = "bibtex-setting-empty";
@@ -249,12 +257,9 @@ class BibCitationSettingTab extends SettingTab {
           return;
         }
 
-        const nextFiles = normalizeBibFileList(plugin.settings.get("bibFiles"));
+        const nextFiles = parseBibFileList(plugin.settings.get("bibFiles"));
         nextFiles[index] = input.value.trim();
-        plugin.settings.set(
-          "bibFiles",
-          nextFiles.filter(Boolean),
-        );
+        plugin.settings.set("bibFiles", serializeBibFileList(nextFiles));
         plugin.resetCache();
         this.render();
         new Notice(t.settingsSaved);
@@ -265,9 +270,9 @@ class BibCitationSettingTab extends SettingTab {
       removeButton.className = "bibtex-setting-remove";
       removeButton.textContent = t.settings.bibFiles.remove;
       removeButton.addEventListener("click", () => {
-        const nextFiles = normalizeBibFileList(plugin.settings.get("bibFiles"));
+        const nextFiles = parseBibFileList(plugin.settings.get("bibFiles"));
         nextFiles.splice(index, 1);
-        plugin.settings.set("bibFiles", nextFiles);
+        plugin.settings.set("bibFiles", serializeBibFileList(nextFiles));
         plugin.resetCache();
         this.render();
         new Notice(t.settingsSaved);
@@ -302,9 +307,9 @@ class BibCitationSettingTab extends SettingTab {
         return;
       }
 
-      const nextFiles = normalizeBibFileList(plugin.settings.get("bibFiles"));
+      const nextFiles = parseBibFileList(plugin.settings.get("bibFiles"));
       nextFiles.push(nextValue);
-      plugin.settings.set("bibFiles", nextFiles);
+      plugin.settings.set("bibFiles", serializeBibFileList(nextFiles));
       plugin.resetCache();
       this.render();
       new Notice(t.settingsSaved);
@@ -376,7 +381,7 @@ class SuggestionManager extends Component {
 }
 
 const DEFAULT_SETTINGS = {
-  bibFiles: [],
+  bibFiles: "",
   pathBase: PATH_BASE_MODE.MARKDOWN,
 };
 
@@ -392,7 +397,7 @@ class BibCitationPlugin extends Plugin {
   }
 
   getBibEntries() {
-    const bibFiles = normalizeBibFileList(this.settings.get("bibFiles"));
+    const bibFiles = parseBibFileList(this.settings.get("bibFiles"));
 
     if (!bibFiles.length) return [];
 
@@ -447,10 +452,7 @@ class BibCitationPlugin extends Plugin {
       ),
     );
     this.settings.setDefault(DEFAULT_SETTINGS);
-    this.settings.set(
-      "bibFiles",
-      normalizeBibFileList(this.settings.get("bibFiles")),
-    );
+    this.settings.set("bibFiles", serializeBibFileList(parseBibFileList(this.settings.get("bibFiles"))));
     this.settings.set(
       "pathBase",
       this.settings.get("pathBase") || PATH_BASE_MODE.MARKDOWN,
