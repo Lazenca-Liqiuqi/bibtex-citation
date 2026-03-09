@@ -5,7 +5,7 @@
 - 项目名称：`bibtex-citation`
 - 当前工作区目录名与 Git 远程仓库名均已迁移为 `bibtex-citation`
 - 项目类型：Typora Community Plugin 插件
-- 当前发布目标版本：`0.1.0`
+- 当前发布目标版本：`0.1.1`
 - 主要功能：在 Typora 中输入 `@` 时，从配置的多个 BibTeX 文件中检索文献条目并插入引用键
 - 运行依赖：
   - Typora Community Plugin Framework
@@ -46,10 +46,9 @@
 - 当前仓库非常精简，核心逻辑集中在 [`main.js`](C:\Users\pc\.typora\community-plugins\plugins\bibtex-citation\main.js)，尚未拆分模块
 - 根目录目前没有 `src/`、测试目录、构建产物目录或自动化检查脚本
 - `package.json` 当前仅保留一个占位性质的 `npm run build`，插件不再依赖原生模块构建
-- 最近提交主要集中在设置兼容性修复、本地接手记录与文档同步，尚未看到测试或发布流程相关文件
-- 当前 Git 工作区在本轮会话结束前包含首次发布准备相关修改
-- 当前正在准备首次版本发布，目标版本为 `0.1.0`，仓库仍无历史 tag
-- `CHANGELOG.md` 已从本轮开始建立，但发布 commit 与版本 tag 仍需手动执行
+- 最近提交已包含首次发布 `v0.1.0` 与后续候选列表样式微调，当前工作区主要是 `0.1.1` 修订版本发布相关改动
+- 仓库已完成首次版本发布 `0.1.0`，当前正在基于该版本发布修订版本 `0.1.1`
+- 当前开发重点仍是提升 Typora 内候选列表的展示质量与稳定性，本轮改动主要覆盖渲染兼容性、信息层次与越界修正
 
 ### 已知实现特征
 
@@ -61,6 +60,10 @@
 - `README.md` 已同步当前设置页交互与路径基准模式说明
 - 插件作者元数据当前统一为 `Lazenca-Liqiuqi`，不再使用早期遗留的 `adam`
 - 项目记忆中的文件路径应统一指向当前 Typora 插件目录，不再引用旧的 `D:\Desktop\bibtex-citation`
+- 候选项当前使用 HTML 字符串渲染而不是返回 DOM 节点，否则 Typora 建议列表会显示 `object HTMLDivElement`
+- 候选项第一行是最多两行的标题，第二行是“年份标签 + 作者列表”，作者最多两行后截断
+- 待选框宽度同时受插件样式与宿主 `.auto-suggest-container` / `.typ-suggestion` 约束
+- 待选框越界修正当前通过 `transform: translateX(...)` 在显示后做一次性水平夹取，避免重复改写 `left` 导致位置漂移
 
 ## 计划
 
@@ -71,7 +74,8 @@
 - 补充最小可执行的调试流程说明，尤其是 BibTeX 文件路径配置与检索结果验证
 - 品牌迁移已完成，后续重点转为改进路径解析与检索体验
 - 继续补充最小可执行的发布与回归验证说明，尤其是首次发布后的手工检查步骤
-- 决定是否清理 `style.css` 中遗留的 `zotero-cite-*` 类名，避免历史命名继续扩散
+- 持续验证待选框在靠右输入、误按回车、重新聚焦后重新触发时的定位稳定性
+- 如果继续美化，优先细化年份标签、选中态和列表整体层次，而不是继续放大候选框宽度
 
 ### 建议后续改进
 
@@ -98,9 +102,12 @@
 - 运行项目定义的构建流程：`npm run build`
 - 查看当前 Git 状态：`git status --short --branch`
 - 检查作者、路径与仓库信息残留：`rg -n -S "adam|D:\\Desktop\\bibtex-citation|zotero|Zotero" .`
+- 检查主入口语法：`node --check main.js`
 
 ### 调试与排查提示
 
 - 先确认 Typora 已启用 Community Plugin Framework，再检查本插件是否出现在插件列表中
 - 若候选项不出现，先检查设置页里的 BibTeX 文件路径是否正确；相对路径默认相对当前 Markdown 文件目录解析
 - 若检索结果异常，优先检查 BibTeX 条目格式是否属于常见写法，以及是否存在重复 citation key
+- 若候选项渲染异常，先确认 `renderSuggestion` 仍返回 HTML 字符串而不是 DOM 节点
+- 若待选框位置异常，优先检查 `clampSuggestContainerToViewport` 是否还在使用 `transform` 而非累积改写 `left`

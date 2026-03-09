@@ -82,6 +82,48 @@ function normalizeWhitespace(value) {
   return String(value || "").replace(/\s+/g, " ").trim();
 }
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function clampSuggestContainerToViewport(container) {
+  if (!container) return;
+
+  const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+  if (!viewportWidth) return;
+
+  const margin = 12;
+  const maxWidth = Math.max(320, Math.min(672, viewportWidth - margin * 2));
+  container.style.maxWidth = `${maxWidth}px`;
+  container.style.width = `${maxWidth}px`;
+  container.style.transform = "";
+
+  const rect = container.getBoundingClientRect();
+  let deltaX = 0;
+
+  if (rect.right > viewportWidth - margin) {
+    deltaX -= rect.right - (viewportWidth - margin);
+  }
+  if (rect.left + deltaX < margin) {
+    deltaX += margin - (rect.left + deltaX);
+  }
+
+  if (Math.abs(deltaX) > 0.5) {
+    container.style.transform = `translateX(${Math.round(deltaX)}px)`;
+  }
+}
+
+function clampAllSuggestContainers() {
+  document.querySelectorAll(".auto-suggest-container").forEach((container) => {
+    clampSuggestContainerToViewport(container);
+  });
+}
+
 function parseBibValue(rawValue) {
   if (!rawValue) return "";
 
@@ -356,10 +398,25 @@ class BibCitationSuggest extends EditorSuggest {
   }
 
   renderSuggestion(item) {
-    let label = `@${item.key}`;
-    const meta = [item.title, item.authors, item.year].filter(Boolean).join(" ");
-    if (meta) label += ` — ${meta}`;
-    return label.trim();
+    const title = escapeHtml(item.title || `@${item.key}`);
+    const year = escapeHtml(item.year || "");
+    const authors = escapeHtml(item.authors || "");
+
+    return `
+      <div class="bibtex-cite-item">
+        <div class="bibtex-cite-title">${title}</div>
+        ${
+          year || authors
+            ? `
+          <div class="bibtex-cite-meta">
+            ${year ? `<span class="bibtex-cite-year">${year}</span>` : ""}
+            ${authors ? `<span class="bibtex-cite-authors">${authors}</span>` : ""}
+          </div>
+        `
+            : ""
+        }
+      </div>
+    `.trim();
   }
 
   beforeApply(item) {
@@ -446,6 +503,26 @@ class BibCitationPlugin extends Plugin {
     );
 
     this.registerSettingTab(new BibCitationSettingTab(this));
+    this._scheduleSuggestClamp = () => {
+      window.requestAnimationFrame(() => {
+        clampAllSuggestContainers();
+      });
+    };
+    this._suggestContainerObserver = new MutationObserver(() => {
+      this._scheduleSuggestClamp();
+    });
+    this._suggestContainerObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["style", "class"],
+    });
+    this.register(() => {
+      this._suggestContainerObserver?.disconnect();
+    });
+    this.registerDomEvent(window, "resize", () => {
+      this._scheduleSuggestClamp();
+    });
 
     const suggest = new BibCitationSuggest(this.app, this);
     if (typeof this.registerMarkdownSugguest === "function") {

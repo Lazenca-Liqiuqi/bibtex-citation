@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 0.1.1 - 2026-03-09
+
+- 重构候选项渲染流程，改为返回 HTML 字符串，修复 `object HTMLDivElement` 与空白候选项问题
+- 优化候选列表样式：标题独立为第一行，年份改为更醒目的标签，标题与作者均支持最多两行后截断
+- 统一运行时代码中的候选项类名为 `bibtex-cite-*`，清理遗留 `zotero` 命名残留
+- 为宿主 `.auto-suggest-container` 与 `.typ-suggestion` 增加宽度约束，避免长标题或长作者将列表横向撑爆
+- 增加待选框视口内夹取逻辑，处理靠右输入、误按回车与重新触发时的越界和位置漂移问题
+
 ## 0.1.0 - 2026-03-09
 
 - 首次发布 `bibtex-citation` Typora Community Plugin
