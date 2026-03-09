@@ -118,10 +118,74 @@ function clampSuggestContainerToViewport(container) {
   }
 }
 
+function getSuggestionContainerForKeyboardApply() {
+  return Array.from(document.querySelectorAll(".auto-suggest-container")).find((container) => {
+    if (!(container instanceof HTMLElement)) return false;
+    if (!container.querySelector(".bibtex-cite-item[data-bibtex-key]")) return false;
+    return container.getBoundingClientRect().height > 0;
+  });
+}
+
+function getSelectedBibtexSuggestionKey(container) {
+  const selectedItem =
+    container?.querySelector(
+      ".typ-suggestion.active, .typ-suggestion.mod-active, .typ-suggestion[aria-selected='true'], .suggestion-item.is-selected, .suggestion-item.active, .suggestion-item.mod-active, .suggestion-item[aria-selected='true']",
+    );
+  const bibtexItem = selectedItem?.matches?.(".bibtex-cite-item[data-bibtex-key]")
+    ? selectedItem
+    : selectedItem?.querySelector?.(".bibtex-cite-item[data-bibtex-key]");
+  return bibtexItem?.getAttribute?.("data-bibtex-key") || "";
+}
+
+function getFirstBibtexSuggestionKey(suggest, container) {
+  const query = suggest?._query || "";
+  if (suggest?.getSuggestions && query) {
+    const firstSuggestion = suggest.getSuggestions(query)[0];
+    if (firstSuggestion?.key) {
+      return firstSuggestion.key;
+    }
+  }
+
+  const firstBibtexItem = container?.querySelector?.(".bibtex-cite-item[data-bibtex-key]");
+  return firstBibtexItem?.getAttribute?.("data-bibtex-key") || "";
+}
+
 function clampAllSuggestContainers() {
   document.querySelectorAll(".auto-suggest-container").forEach((container) => {
     clampSuggestContainerToViewport(container);
   });
+}
+
+function getBibtexSuggestionItemFromEventTarget(target) {
+  const itemEl = target?.closest?.(".bibtex-cite-item[data-bibtex-key]");
+  if (!itemEl || !itemEl.closest(".auto-suggest-container")) {
+    return null;
+  }
+  return itemEl;
+}
+
+function shouldSuppressFollowupPointerEvent(until) {
+  return Number.isFinite(until) && Date.now() <= until;
+}
+
+function applySuggestionFromCurrentState(suggest, replacementText) {
+  const editor = window.editor;
+  const anchor = editor?.autoComplete?.state?.anchor;
+  if (!anchor?.containerNode?.firstChild) {
+    return false;
+  }
+
+  const activeRange = editor.selection.getRangy();
+  const anchorTextNode = anchor.containerNode.firstChild;
+  const query = suggest._query || "";
+  const replaceLength = suggest.lengthOfTextBeforeToBeReplaced(query);
+
+  activeRange.setStart(anchorTextNode, Math.max(0, anchor.start - replaceLength));
+  activeRange.setEnd(anchorTextNode, anchor.end);
+  editor.selection.setRange(activeRange, true);
+  editor.UserOp.pasteHandler(editor, replacementText, true);
+  editor.autoComplete.hide();
+  return true;
 }
 
 function parseBibValue(rawValue) {
@@ -372,7 +436,14 @@ class BibCitationSuggest extends EditorSuggest {
   }
 
   findQuery(text) {
-    const match = text.match(/@([^@\s]*)$/);
+    const lastOpenBracket = text.lastIndexOf("[");
+    const lastCloseBracket = text.lastIndexOf("]");
+    if (lastOpenBracket <= lastCloseBracket) {
+      return { isMatched: false, query: "" };
+    }
+
+    const bracketContent = text.slice(lastOpenBracket + 1);
+    const match = bracketContent.match(/(?:^|;\s*)@([^@\]\s;]*)$/);
     return { isMatched: !!match, query: match ? match[1] : "" };
   }
 
@@ -381,6 +452,9 @@ class BibCitationSuggest extends EditorSuggest {
 
     const normalizedQuery = query.toLowerCase();
     const entries = this.plugin.getBibEntries();
+    if (entries.some((item) => item.key.toLowerCase() === normalizedQuery)) {
+      return [];
+    }
 
     return entries
       .filter((item) => item.searchText.includes(normalizedQuery))
@@ -401,9 +475,10 @@ class BibCitationSuggest extends EditorSuggest {
     const title = escapeHtml(item.title || `@${item.key}`);
     const year = escapeHtml(item.year || "");
     const authors = escapeHtml(item.authors || "");
+    const key = escapeHtml(item.key || "");
 
     return `
-      <div class="bibtex-cite-item">
+      <div class="bibtex-cite-item" data-bibtex-key="${key}">
         <div class="bibtex-cite-title">${title}</div>
         ${
           year || authors
@@ -503,6 +578,7 @@ class BibCitationPlugin extends Plugin {
     );
 
     this.registerSettingTab(new BibCitationSettingTab(this));
+    this._suggest = null;
     this._scheduleSuggestClamp = () => {
       window.requestAnimationFrame(() => {
         clampAllSuggestContainers();
@@ -514,8 +590,6 @@ class BibCitationPlugin extends Plugin {
     this._suggestContainerObserver.observe(document.body, {
       childList: true,
       subtree: true,
-      attributes: true,
-      attributeFilter: ["style", "class"],
     });
     this.register(() => {
       this._suggestContainerObserver?.disconnect();
@@ -523,8 +597,73 @@ class BibCitationPlugin extends Plugin {
     this.registerDomEvent(window, "resize", () => {
       this._scheduleSuggestClamp();
     });
+    this._handleSuggestEnterKey = (event) => {
+      if (event.key !== "Enter" || event.isComposing) {
+        return;
+      }
+
+      const suggestContainer = getSuggestionContainerForKeyboardApply();
+      if (!suggestContainer) {
+        return;
+      }
+
+      const citationKey =
+        getSelectedBibtexSuggestionKey(suggestContainer) ||
+        getFirstBibtexSuggestionKey(this._suggest, suggestContainer);
+      if (!citationKey) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation?.();
+      applySuggestionFromCurrentState(this._suggest, `@${citationKey}`);
+    };
+    document.addEventListener("keydown", this._handleSuggestEnterKey, true);
+    this.register(() => {
+      document.removeEventListener("keydown", this._handleSuggestEnterKey, true);
+    });
+    this._suppressPointerEventsUntil = 0;
+    this._handleSuggestPointerDown = (event) => {
+      const itemEl = getBibtexSuggestionItemFromEventTarget(event.target);
+      if (!itemEl) {
+        return;
+      }
+
+      const citationKey = itemEl.getAttribute("data-bibtex-key");
+      if (!citationKey) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation?.();
+      this._suppressPointerEventsUntil = Date.now() + 250;
+      applySuggestionFromCurrentState(this._suggest, `@${citationKey}`);
+    };
+    this._handleSuggestPointerFinish = (event) => {
+      if (!shouldSuppressFollowupPointerEvent(this._suppressPointerEventsUntil)) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation?.();
+      if (event.type === "click") {
+        this._suppressPointerEventsUntil = 0;
+      }
+    };
+    document.addEventListener("mousedown", this._handleSuggestPointerDown, true);
+    document.addEventListener("mouseup", this._handleSuggestPointerFinish, true);
+    document.addEventListener("click", this._handleSuggestPointerFinish, true);
+    this.register(() => {
+      document.removeEventListener("mousedown", this._handleSuggestPointerDown, true);
+      document.removeEventListener("mouseup", this._handleSuggestPointerFinish, true);
+      document.removeEventListener("click", this._handleSuggestPointerFinish, true);
+    });
 
     const suggest = new BibCitationSuggest(this.app, this);
+    this._suggest = suggest;
     if (typeof this.registerMarkdownSugguest === "function") {
       this.registerMarkdownSugguest(suggest);
       return;

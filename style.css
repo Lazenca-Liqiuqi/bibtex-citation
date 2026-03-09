@@ -22,6 +22,9 @@
   box-sizing: border-box;
 }
 
+.typ-suggestion.active > .suggestion-item,
+.typ-suggestion.mod-active > .suggestion-item,
+.typ-suggestion[aria-selected="true"] > .suggestion-item,
 .suggestion-item:hover,
 .suggestion-item.is-selected {
   background-color: #f0f0f0;
@@ -83,6 +86,9 @@
 }
 
 /* Dark mode support */
+.theme-dark .typ-suggestion.active > .suggestion-item,
+.theme-dark .typ-suggestion.mod-active > .suggestion-item,
+.theme-dark .typ-suggestion[aria-selected="true"] > .suggestion-item,
 .theme-dark .suggestion-item:hover,
 .theme-dark .suggestion-item.is-selected {
   background-color: #2d2d2d;

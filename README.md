@@ -1,16 +1,18 @@
 # bibtex-citation
 
-`bibtex-citation` 是一个 Typora Community Plugin 插件，用于在 Typora 中输入 `@` 时，从一个或多个已配置的本地 BibTeX 文件中检索文献条目，并插入对应的引用键。
+`bibtex-citation` 是一个 Typora Community Plugin 插件，用于在 Typora 的方括号引用语法中输入 `@query` 时，从一个或多个已配置的本地 BibTeX 文件中检索文献条目，并插入对应的引用键。
 
 插件只会读取你在设置中配置的 `.bib` 文件，并在选中候选项后插入 `@citationKey`。它不会修改任何 `.bib` 文件，也不依赖外部参考文献管理器、SQLite、原生 Node 模块或第三方 npm 包。
 
-当前文档对应发布版本：`0.1.1`。
+本项目 fork 自 `adam-coates/typora-plugin-zotero`，并在此基础上逐步调整为面向本地 BibTeX 文件的引用工作流。
+
+当前文档对应发布版本：`0.1.2`。
 
 ## 功能概览
 
 - 从一个或多个本地 `.bib` 文件检索文献
 - 支持按 `citation key`、标题、作者、期刊、年份等字段搜索
-- 在 Typora 中输入 `@` 触发候选列表
+- 在 Typora 的方括号引用语法中输入 `@query` 触发候选列表
 - 多个 BibTeX 路径支持逐条添加、编辑、删除
 - 相对路径支持多种解析基准模式
 - 当多个 BibTeX 文件存在相同 `citation key` 时，以配置列表中更靠前的文件为准
@@ -97,9 +99,9 @@ D:/Literature/shared.bib
 }
 ```
 
-### 2. 在 Typora 中输入 `@`
+### 2. 在方括号引用中输入 `@query`
 
-在 Markdown 文档中输入 `@`，然后继续输入检索关键词。你可以按以下信息搜索：
+在 Markdown 文档里先输入 `[`，再在方括号内输入 `@` 和检索关键词。你可以按以下信息搜索：
 
 - `citation key`
 - 标题
@@ -110,17 +112,24 @@ D:/Literature/shared.bib
 例如：
 
 ```text
-@smith
-@2024
-@example
+[@smith
+[@2024
+[@example
+[@smith2024example; @doe
 ```
 
 ### 3. 选择候选项并插入引用
 
-插件会弹出候选列表。使用方向键选择目标条目后按回车，即可插入：
+插件会弹出候选列表。你可以使用方向键选择目标条目后按回车，也可以直接用鼠标点击候选项。若候选栏打开但尚未有宿主选中项，按回车会默认插入第一条建议。插入效果示例：
 
 ```text
-@smith2024example
+[@smith2024example]
+```
+
+多文献引用示例：
+
+```text
+[@smith2024example; @doe2023study]
 ```
 
 插件只会插入引用键，不会自动展开完整参考文献格式，也不会修改原始 `.bib` 文件。
@@ -168,11 +177,12 @@ secondary.bib
 
 ## 常见排查
 
-### 输入 `@` 后没有出现候选项
+### 在方括号里输入 `@query` 后没有出现候选项
 
 - 确认 Typora Community Plugin Framework 已正确启用
 - 确认 `BibTeX Citations` 插件已启用
 - 确认 `BibTeX Files` 中填写的路径真实存在且可读取
+- 确认你当前是在未闭合的方括号引用里输入，例如 `[@smith`
 - 如果使用相对路径，确认路径是相对于当前 Markdown 文件目录而不是其他目录
 
 ### 检索结果不完整或不准确
@@ -192,6 +202,6 @@ secondary.bib
 
 - 插件 ID：`bibtex-citation`
 - 插件名称：`BibTeX Citations`
-- 当前版本：`0.1.0`
+- 当前版本：`0.1.2`
 - 支持平台：Windows、Linux、macOS
 - 本仓库和本地插件目录都应使用名称 `bibtex-citation`
