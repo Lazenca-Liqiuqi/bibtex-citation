@@ -1,6 +1,7 @@
 const { Plugin, SettingTab, Component, EditorSuggest, I18n, Notice } =
   window[Symbol.for("typora-plugin-core@v2")];
 const fs = window.reqnode("fs");
+const path = window.reqnode("path");
 
 const MAX_SUGGESTIONS = 50;
 
@@ -10,6 +11,38 @@ function parseBibFileList(value) {
     .split(/[\r\n,;]+/)
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function getActiveMarkdownPath() {
+  const activeNode = document.querySelector(
+    ".file-library-node.file-library-file-node.active",
+  );
+  if (activeNode) {
+    const activePath = activeNode.getAttribute("data-path");
+    if (activePath && activePath.endsWith(".md")) {
+      return activePath;
+    }
+  }
+
+  const titleMatch = document.title.match(/(.+\.md)/);
+  if (titleMatch) {
+    return titleMatch[1];
+  }
+
+  return null;
+}
+
+function resolveBibFilePath(rawPath) {
+  const trimmedPath = String(rawPath || "").trim();
+  if (!trimmedPath) return "";
+  if (path.isAbsolute(trimmedPath)) return trimmedPath;
+
+  const activeMarkdownPath = getActiveMarkdownPath();
+  if (activeMarkdownPath) {
+    return path.resolve(path.dirname(activeMarkdownPath), trimmedPath);
+  }
+
+  return path.resolve(process.cwd(), trimmedPath);
 }
 
 function normalizeWhitespace(value) {
@@ -85,7 +118,7 @@ const i18n = new I18n({
       settings: {
         bibFiles: {
           name: "BibTeX Files",
-          desc: "Absolute BibTeX file paths separated by commas, semicolons, or new lines",
+          desc: "BibTeX file paths separated by commas, semicolons, or new lines. Relative paths are resolved from the current Markdown file directory.",
         },
       },
     },
@@ -116,7 +149,7 @@ class BibCitationSettingTab extends SettingTab {
       s.addText((text) => {
         text.value = plugin.settings.get("bibFiles");
         text.placeholder =
-          "/path/to/references.bib; /path/to/library.bib; /path/to/group.bib";
+          "./references.bib; ./library/group.bib; /path/to/shared.bib";
         text.onblur = () => {
           plugin.settings.set("bibFiles", text.value);
           plugin.resetCache();
@@ -210,31 +243,33 @@ class BibCitationPlugin extends Plugin {
     const seenKeys = new Set();
 
     for (const bibFile of bibFiles) {
-      if (!fs.existsSync(bibFile)) {
-        console.warn(this.i18n.t.fileNotFound + bibFile);
+      const resolvedPath = resolveBibFilePath(bibFile);
+
+      if (!fs.existsSync(resolvedPath)) {
+        console.warn(this.i18n.t.fileNotFound + resolvedPath);
         continue;
       }
 
       try {
-        const stat = fs.statSync(bibFile);
-        const cacheItem = this.bibCache.get(bibFile);
+        const stat = fs.statSync(resolvedPath);
+        const cacheItem = this.bibCache.get(resolvedPath);
 
         if (!cacheItem || cacheItem.mtimeMs !== stat.mtimeMs) {
-          const content = fs.readFileSync(bibFile, "utf8");
-          this.bibCache.set(bibFile, {
+          const content = fs.readFileSync(resolvedPath, "utf8");
+          this.bibCache.set(resolvedPath, {
             mtimeMs: stat.mtimeMs,
-            entries: parseBibEntries(content, bibFile),
+            entries: parseBibEntries(content, resolvedPath),
           });
         }
 
-        const { entries } = this.bibCache.get(bibFile);
+        const { entries } = this.bibCache.get(resolvedPath);
         for (const entry of entries) {
           if (seenKeys.has(entry.key)) continue;
           seenKeys.add(entry.key);
           merged.push(entry);
         }
       } catch (error) {
-        console.error(this.i18n.t.loadError + bibFile, error);
+        console.error(this.i18n.t.loadError + resolvedPath, error);
       }
     }
 

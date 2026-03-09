@@ -16,34 +16,34 @@ Requires the [Typora Community Plugin Framework](https://github.com/typora-commu
 
 ```ps1
 cd %UserProfile%\.typora\community-plugins\
-git clone https://github.com/Lazenca-Liqiuqi/typora-plugin-zotero bibtex-citation
+git clone https://github.com/Lazenca-Liqiuqi/bibtex-citation.git bibtex-citation
 ```
 
 #### MacOS & Linux
 
 ```bash
 cd ~/.config/Typora/plugins/plugins/
-git clone https://github.com/Lazenca-Liqiuqi/typora-plugin-zotero bibtex-citation
+git clone https://github.com/Lazenca-Liqiuqi/bibtex-citation.git bibtex-citation
 ```
 
 ### 2. Install
 
-This trimmed plugin no longer depends on external reference managers, SQLite, or native Node modules.
-At the moment there is no extra build step.
+This trimmed plugin no longer depends on external reference managers, SQLite, native Node modules, or third-party npm packages.
+There is no extra install or build step.
 
 #### Windows
 
 ```ps1
 cd %UserProfile%\.typora\community-plugins\bibtex-citation
-npm install
 ```
 
 #### MacOS & Linux
 
 ```bash
 cd ~/.config/Typora/plugins/plugins/bibtex-citation
-npm install
 ```
+
+You can stop after cloning or copying the plugin folder into the Typora plugin directory.
 
 ---
 
@@ -61,8 +61,9 @@ The plugin should be installed and show up in the list of installed plugins.
 
 ## Configuration
 
-- Configure one or more absolute BibTeX file paths in the plugin settings
+- Configure one or more BibTeX file paths in the plugin settings
 - Separate multiple paths with commas, semicolons, or line breaks
+- Relative paths are resolved from the current Markdown file directory
 
 ![](./assets/screenshot-2025-11-13_18-29-26.png)
 
@@ -73,7 +74,9 @@ The plugin should be installed and show up in the list of installed plugins.
 Example:
 
 ```text
-/Users/name/references/main.bib; /Users/name/references/group.bib
+./references.bib
+./bib/library.bib
+/Users/name/references/shared.bib
 ```
 
 ---
@@ -96,6 +99,5 @@ Example:
 
 ## Migration
 
-- The current remote repository name still uses `typora-plugin-zotero`, but the plugin itself is now BibTeX-only
-- For new installs, clone into a local plugin folder named `bibtex-citation`
-- For existing installs, renaming the local plugin directory from `typora-plugin-zotero` to `bibtex-citation` helps keep the plugin identity consistent with the new manifest and package names
+- The repository and plugin now both use the `bibtex-citation` name
+- For local installs, keep the plugin folder name as `bibtex-citation`
