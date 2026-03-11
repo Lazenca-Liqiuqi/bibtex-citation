@@ -54,7 +54,7 @@ export class BibCitationSettingTab extends SettingTab {
           const value = $(event.target).val();
           plugin.settings.set("displayLanguage", value);
           plugin.refreshI18n();
-          plugin.refreshCacheView();
+          plugin.sidebarPanel?.render?.({ allowLibraryLoad: false });
           this.render();
           new Notice(plugin.i18n.t.settingsSaved);
         });
@@ -82,7 +82,8 @@ export class BibCitationSettingTab extends SettingTab {
         selectEl.on("change", (event) => {
           const value = $(event.target).val();
           plugin.settings.set("pathBase", value);
-          plugin.resetCache();
+          plugin.invalidateLibrary();
+          plugin.sidebarPanel?.render?.({ allowLibraryLoad: false });
           this.render();
           new Notice(t.settingsSaved);
         });
@@ -125,7 +126,8 @@ export class BibCitationSettingTab extends SettingTab {
         const nextFiles = parseBibFileList(plugin.settings.get("bibFiles"));
         nextFiles[index] = input.value.trim();
         plugin.settings.set("bibFiles", serializeBibFileList(nextFiles));
-        plugin.resetCache();
+        plugin.invalidateLibrary();
+        plugin.sidebarPanel?.render?.({ allowLibraryLoad: false });
         this.render();
         new Notice(t.settingsSaved);
       });
@@ -138,7 +140,8 @@ export class BibCitationSettingTab extends SettingTab {
         const nextFiles = parseBibFileList(plugin.settings.get("bibFiles"));
         nextFiles.splice(index, 1);
         plugin.settings.set("bibFiles", serializeBibFileList(nextFiles));
-        plugin.resetCache();
+        plugin.invalidateLibrary();
+        plugin.sidebarPanel?.render?.({ allowLibraryLoad: false });
         this.render();
         new Notice(t.settingsSaved);
       });
@@ -175,7 +178,8 @@ export class BibCitationSettingTab extends SettingTab {
       const nextFiles = parseBibFileList(plugin.settings.get("bibFiles"));
       nextFiles.push(nextValue);
       plugin.settings.set("bibFiles", serializeBibFileList(nextFiles));
-      plugin.resetCache();
+      plugin.invalidateLibrary();
+      plugin.sidebarPanel?.render?.({ allowLibraryLoad: false });
       this.render();
       new Notice(t.settingsSaved);
     });

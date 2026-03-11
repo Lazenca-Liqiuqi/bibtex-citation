@@ -13,6 +13,7 @@ export class BibEntryStore {
   constructor(plugin) {
     this.plugin = plugin;
     this.cache = new Map();
+    this.mergedEntries = null;
   }
 
   /**
@@ -22,14 +23,29 @@ export class BibEntryStore {
    */
   clear() {
     this.cache.clear();
+    this.mergedEntries = null;
+  }
+
+  /**
+   * 功能：判断当前是否已经持有合并后的文献库缓存。
+   * 输入：无。
+   * 输出：若已存在 `mergedEntries` 则返回 `true`，否则返回 `false`。
+   */
+  hasMergedEntries() {
+    return Array.isArray(this.mergedEntries);
   }
 
   /**
    * 功能：读取设置中的 BibTeX 文件并合并为检索条目列表。
+   * 说明：若当前已有 `mergedEntries`，则直接复用；只有缓存被清空后，才会在这里重新读取 `.bib` 文件。
    * 输入：无，内部从插件设置读取路径配置。
    * 输出：按配置优先级去重后的文献条目数组。
    */
   getEntries() {
+    if (this.mergedEntries) {
+      return this.mergedEntries;
+    }
+
     const bibFiles = parseBibFileList(this.plugin.settings.get("bibFiles"));
     if (!bibFiles.length) return [];
 
@@ -72,6 +88,7 @@ export class BibEntryStore {
       }
     }
 
-    return merged;
+    this.mergedEntries = merged;
+    return this.mergedEntries;
   }
 }

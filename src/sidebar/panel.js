@@ -37,19 +37,24 @@ export class BibCitationSidebarPanel extends SidebarPanel {
    * 输入：无。
    * 输出：无返回值。
    */
-  render() {
+  render(options = {}) {
+    const { allowLibraryLoad = true } = options;
     const t = this.plugin.i18n.t.sidebar;
     const paths = parseBibFileList(this.plugin.settings.get("bibFiles"));
     const pathBase = this.plugin.settings.get("pathBase");
-    const citedCount = getCurrentDocumentCitationCount();
+    const citedCount = this.plugin.getCurrentDocumentCitationCount();
 
     let entryCount = 0;
     let loadError = "";
 
-    try {
-      entryCount = this.plugin.getBibEntries().length;
-    } catch (error) {
-      loadError = error?.message || String(error);
+    if (allowLibraryLoad) {
+      try {
+        entryCount = this.plugin.getBibEntries().length;
+      } catch (error) {
+        loadError = error?.message || String(error);
+      }
+    } else {
+      entryCount = null;
     }
 
     const sections = [
@@ -57,13 +62,10 @@ export class BibCitationSidebarPanel extends SidebarPanel {
       createSummaryGrid([
         [t.pathBaseLabel, getPathBaseLabel(pathBase, this.plugin.i18n.t.settings.pathBase)],
         [t.configuredFilesLabel, String(paths.length)],
-        [t.indexedEntriesLabel, loadError ? t.unavailable : String(entryCount)],
+        [t.indexedEntriesLabel, loadError || entryCount === null ? t.unavailable : String(entryCount)],
         [t.citedEntriesLabel, formatCitationCount(t.citationCountFormat, citedCount)],
       ]),
-      createActions([
-        [t.refreshButton, () => this.handleRefresh()],
-        [t.openSettingsButton, () => this.plugin.app.commands.run("settings:open")],
-      ]),
+      createActions([[t.refreshButton, () => this.handleRefresh()]]),
       loadError ? createError(t.loadErrorPrefix + loadError) : null,
       paths.length ? createPathList(paths, t.filesTitle) : createEmpty(t.empty),
       createFootnote(t.triggerHint),
@@ -77,11 +79,12 @@ export class BibCitationSidebarPanel extends SidebarPanel {
 
   /**
    * 功能：清空缓存并立刻刷新面板展示。
+   * 说明：这里走的是手动强制重读路径，会直接调用 `reloadLibraryNow()`。
    * 输入：无。
    * 输出：无返回值。
    */
   handleRefresh() {
-    this.plugin.refreshCacheView();
+    this.plugin.reloadLibraryNow();
   }
 }
 
@@ -198,30 +201,6 @@ function getPathBaseLabel(pathBase, labels) {
     default:
       return labels.markdown;
   }
-}
-
-function getCurrentDocumentCitationCount() {
-  const markdown = window.editor?.getMarkdown?.();
-  if (!markdown) {
-    return { unique: 0, total: 0 };
-  }
-
-  const keys = new Set();
-  let total = 0;
-  const bracketPattern = /\[[\s\S]*?\]/g;
-  const citationPattern = /@([^\s\],;]+)/g;
-
-  for (const block of markdown.match(bracketPattern) || []) {
-    let match = citationPattern.exec(block);
-    while (match) {
-      keys.add(match[1]);
-      total += 1;
-      match = citationPattern.exec(block);
-    }
-    citationPattern.lastIndex = 0;
-  }
-
-  return { unique: keys.size, total };
 }
 
 function formatCitationCount(template, counts) {
