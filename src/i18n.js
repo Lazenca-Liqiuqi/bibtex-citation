@@ -40,7 +40,7 @@ const en = {
     restoreNoChanges: "No managed citation blocks were found.",
     restoreSuccess: "Restored {blocks} citation blocks ({keys} keys).",
     insertBibliographyNoChanges:
-      "No strictly valid CSL citation keys were found. Insert / Update Bibliography currently only works while the document still contains patterns like [@key] or [@a; @b].",
+      "No usable citation sources were found. Insert / Update Bibliography currently reads both visible [@key] blocks and managed citation blocks.",
     insertBibliographySuccess: "Updated bibliography for {keys} cited keys.",
     removeBibliographyNoChanges: "No managed bibliography block was found.",
     removeBibliographySuccess: "Removed the managed bibliography block.",
@@ -49,7 +49,7 @@ const en = {
       "Type [@query] to search the configured BibTeX files. For duplicate keys, the earlier file wins.",
     citationCountHint: "Counts show unique keys and total bracket citations.",
     renderHint:
-      "Render only processes strict blocks like [@key] or [@a; @b] and writes managed citation blocks. Restore Citations turns those managed blocks back into raw [@key]. Insert / Update Bibliography only uses strict @key blocks still present in the document. Remove Bibliography only deletes the managed block created by this plugin. Unknown keys or invalid syntax stop the first and third actions.",
+      "Render only processes strict blocks like [@key] or [@a; @b] and writes managed citation blocks. Restore turns those managed blocks back into raw [@key]. Insert / Update Bibliography reads both visible [@key] blocks and managed citation blocks. Remove Bibliography only deletes the managed block created by this plugin. Unknown keys or invalid syntax stop render and bibliography updates.",
     citationCountFormat: "{unique} unique / {total} total",
     filesTitle: "BibTeX Files",
   },
@@ -123,7 +123,7 @@ const zhCn = {
     restoreNoChanges: "当前没有可恢复的受控 citation 块。",
     restoreSuccess: "已恢复 {blocks} 个引用块，共 {keys} 个 key。",
     insertBibliographyNoChanges:
-      "没有发现可用于生成参考文献的严格合法 citation key。当前只有在文档里还保留 [@key] 或 [@a; @b] 这类形式时，才能插入或更新参考文献。",
+      "没有发现可用于生成参考文献的引用源。当前插入/更新参考文献会同时读取正文里可见的 [@key] 和受控 citation 块。",
     insertBibliographySuccess: "已为 {keys} 个引用 key 更新参考文献。",
     removeBibliographyNoChanges: "当前没有可删除的受控参考文献块。",
     removeBibliographySuccess: "已删除受控参考文献块。",
@@ -131,7 +131,7 @@ const zhCn = {
     triggerHint: "输入 [@query] 即可检索已配置的 BibTeX 文件；若 key 重复，优先采用更靠前的文件。",
     citationCountHint: "统计显示唯一 key 数和总引用次数。",
     renderHint:
-      "渲染引用只处理严格形式，如 [@key] 或 [@a; @b]，并写入受控 citation 块。恢复引用会把这些受控块还原成原始 [@key]。插入/更新参考文献只使用文档里仍可直接读取的严格 @key 引用块。删除参考文献只会删除本插件生成的受控块。遇到未知 key 或非法语法时，渲染引用和插入/更新参考文献都会直接停止。",
+      "渲染引用只处理严格形式，如 [@key] 或 [@a; @b]，并写入受控 citation 块。恢复会把这些受控块还原成原始 [@key]。插入/更新参考文献会同时读取正文里可见的 [@key] 和受控 citation 块。删除参考文献只会删除本插件生成的受控块。遇到未知 key 或非法语法时，渲染引用和插入/更新参考文献都会直接停止。",
     citationCountFormat: "共 {unique} 条 / {total} 次",
     filesTitle: "BibTeX 文件",
   },

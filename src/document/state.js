@@ -1,4 +1,7 @@
-import { extractClosedBracketRanges } from "./brackets.js";
+import {
+  collectCitationSourcesFromMarkdown,
+  findFirstInvalidCitationProblem,
+} from "../csl/citation-blocks.js";
 
 /**
  * 功能：维护当前 Markdown 文档的轻量状态缓存，避免重复统计引用信息。
@@ -18,7 +21,7 @@ export class CurrentDocumentState {
   clear() {
     this.lastMarkdown = null;
     this.citationCount = { unique: 0, total: 0 };
-    this.citationError = "";
+    this.citationError = null;
   }
 
   /**
@@ -30,7 +33,7 @@ export class CurrentDocumentState {
     if (!markdown) {
       this.lastMarkdown = markdown || "";
       this.citationCount = { unique: 0, total: 0 };
-      this.citationError = "";
+      this.citationError = null;
       return { counts: this.citationCount, error: this.citationError };
     }
 
@@ -38,36 +41,31 @@ export class CurrentDocumentState {
       return { counts: this.citationCount, error: this.citationError };
     }
 
+    const invalidProblem = findFirstInvalidCitationProblem(markdown, (key) => validCitationKeys.has(key));
+    if (invalidProblem) {
+      this.lastMarkdown = markdown;
+      this.citationCount = { unique: 0, total: 0 };
+      this.citationError = invalidProblem;
+      return { counts: this.citationCount, error: this.citationError };
+    }
+
+    const citationSources = collectCitationSourcesFromMarkdown(
+      markdown,
+      (key) => validCitationKeys.has(key),
+    );
     const keys = new Set();
     let total = 0;
-    const citationPattern = /@([^\s\],;]+)/g;
 
-    for (const { text: block } of extractClosedBracketRanges(markdown)) {
-      let match = citationPattern.exec(block);
-      let hasCitation = false;
-      while (match) {
-        hasCitation = true;
-        const citationKey = match[1];
-        if (!validCitationKeys.has(citationKey)) {
-          this.lastMarkdown = markdown;
-          this.citationError = citationKey;
-          return { counts: this.citationCount, error: this.citationError };
-        }
-
+    for (const source of citationSources) {
+      for (const citationKey of source.keys) {
         keys.add(citationKey);
         total += 1;
-        match = citationPattern.exec(block);
-      }
-      citationPattern.lastIndex = 0;
-
-      if (!hasCitation) {
-        continue;
       }
     }
 
     this.lastMarkdown = markdown;
     this.citationCount = { unique: keys.size, total };
-    this.citationError = "";
+    this.citationError = null;
     return { counts: this.citationCount, error: this.citationError };
   }
 }

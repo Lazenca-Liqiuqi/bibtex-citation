@@ -16,7 +16,7 @@
 - 在 Typora 的方括号引用语法中输入 `@query` 触发候选列表
 - 在左侧活动栏提供 BibTeX 面板按钮，可查看当前配置概览、当前文档引用统计并手动刷新缓存
 - 支持把当前文档中严格合法的 `[@key]` / `[@a; @b]` 引用块渲染为文中引用
-- 支持根据当前文档中仍保留 `@key` 的合法引用块插入或更新参考文献表
+- 支持根据正文中的 `[@key]` 与受控 citation 块插入或更新参考文献表
 - 支持删除由本插件生成的受控参考文献块
 - 支持在插件设置中切换 `English` 与 `简体中文` 两种界面语言
 - 多个 BibTeX 路径支持逐条添加、编辑、删除
@@ -192,9 +192,14 @@ D:/Literature/shared.bib
 
 而像 `[see @smith2024example]`、`[@smith2024example, p. 3]`、`[smith2024example]` 这类包含说明文字、locator，或本身不是严格 CSL 引用块的片段，当前不会自动改写。
 
-如果当前文档任意闭合引用块中包含未收录于文献库的 citation key，或者闭合块本身不是严格合法的 CSL 语法，那么“渲染引用”和“插入/更新参考文献”都会直接报错并停止，不再跳过非法块后继续处理其他内容。
+如果当前文档任意正文闭合引用块中包含未收录于文献库的 citation key，或者闭合块本身不是严格合法的 CSL 语法，那么“渲染引用”和“插入/更新参考文献”都会直接报错并停止，不再跳过非法块后继续处理其他内容。
 
-`Insert / Update Bibliography / 插入/更新参考文献` 会从当前文档中仍保留 `@key` 的严格合法 citation block 提取 key，按当前配置的 `.csl` 样式在文档末尾追加或更新一个受控参考文献块。受控块使用 HTML 注释包裹，便于后续重复执行时直接更新，例如：
+`Insert / Update Bibliography / 插入/更新参考文献` 会从当前文档中两类引用源提取 key：
+
+- 正文里直接可见的严格 `[@key]` / `[@a; @b]`
+- 由 `Render Citations` 生成的受控 citation 块中保存的原始 `[@key]`
+
+然后按当前配置的 `.csl` 样式在文档末尾追加或更新一个受控参考文献块。受控块使用 HTML 注释包裹，便于后续重复执行时直接更新，例如：
 
 ```html
 <!-- bibtex-citation:bibliography:start -->
@@ -206,8 +211,8 @@ D:/Literature/shared.bib
 
 注意：
 
-- 当前版本的 bibliography 仍只会读取文档里直接可见的严格 `[@key]` 引用块；虽然 `Render Citations` 已经把原始 key 保存在受控注释中，但 bibliography 还没有接入这条提取链路
-- 因此在当前版本中，更推荐先插入参考文献，再决定是否执行“渲染引用”
+- bibliography 现在会同时读取正文里的严格 `[@key]` 和受控 citation 块中的原始 `[@key]`
+- 因此在当前版本中，先渲染引用再插入/更新参考文献也是可行的
 
 `Remove Bibliography / 删除参考文献` 只会删除这类由本插件生成的受控参考文献块，不会删除你手写的普通 `## References` 段落。
 
@@ -231,7 +236,7 @@ D:/Literature/shared.bib
 | locator，如 `[@key, p. 3]` | 暂不支持 | 页码、章节号等 locator 当前会阻止相关 CSL 操作继续执行 |
 | suffix / 更复杂 citation cluster 语法 | 暂不支持 | 当前仅支持严格的 `[@a; @b]` 形式；其余语法会直接报错 |
 | 脚注 / 尾注 note-style citation | 暂不支持 | 当前实现是原地替换正文，不会自动创建脚注结构 |
-| 插入或更新 bibliography | 已支持 | 会在文档末尾写入一个受控参考文献块，前提是文档里仍保留合法 `@key` 引用块 |
+| 插入或更新 bibliography | 已支持 | 会同时读取正文里的 `[@key]` 与受控 citation 块，再在文档末尾写入受控参考文献块 |
 
 补充说明：
 

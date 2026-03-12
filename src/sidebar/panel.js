@@ -96,7 +96,7 @@ export class BibCitationSidebarPanel extends SidebarPanel {
         },
       ]),
       loadError ? createError(t.loadErrorPrefix + loadError) : null,
-      citationState.error ? createError(t.invalidCitationPrefix + citationState.error) : null,
+      citationState.error ? createError(formatCitationStateError(t, citationState.error)) : null,
       paths.length ? createPathList(paths, t.filesTitle) : createEmpty(t.empty),
       createFootnote(t.triggerHint),
       createFootnote(t.citationCountHint),
@@ -319,4 +319,25 @@ function formatCitationCount(template, counts) {
   return String(template)
     .replace("{unique}", String(counts.unique))
     .replace("{total}", String(counts.total));
+}
+
+function formatCitationStateError(texts, error) {
+  if (!error) {
+    return "";
+  }
+
+  if (error.type === "unknown-key") {
+    return texts.invalidCitationPrefix + error.key;
+  }
+
+  return texts.invalidCitationBlockPrefix + summarizeCitationBlock(error.blockText);
+}
+
+function summarizeCitationBlock(blockText) {
+  const normalized = String(blockText || "").replace(/\s+/g, " ").trim();
+  if (normalized.length <= 80) {
+    return normalized;
+  }
+
+  return normalized.slice(0, 77) + "...";
 }

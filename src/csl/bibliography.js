@@ -1,8 +1,8 @@
 import { toCslItem } from "./item.js";
 import { getPluginRequire } from "./runtime.js";
 import {
+  collectCitationSourcesFromMarkdown,
   collectUniqueCitationKeys,
-  collectValidCitationBlocksFromMarkdown,
 } from "./citation-blocks.js";
 
 const pluginRequire = getPluginRequire();
@@ -23,12 +23,12 @@ const BIBLIOGRAPHY_BLOCK_PATTERN = new RegExp(
 export function upsertBibliographyMarkdown(markdown, entries, templateName, headingText) {
   const source = String(markdown || "");
   const entryMap = new Map(entries.map((entry) => [entry.key, entry]));
-  const citationBlocks = collectValidCitationBlocksFromMarkdown(source, (key) => entryMap.has(key));
-  if (!citationBlocks.length) {
+  const citationSources = collectCitationSourcesFromMarkdown(source, (key) => entryMap.has(key));
+  if (!citationSources.length) {
     return createBibliographyResult(source);
   }
 
-  const keys = collectUniqueCitationKeys(citationBlocks);
+  const keys = collectUniqueCitationKeys(citationSources);
   if (!keys.length) {
     return createBibliographyResult(source);
   }

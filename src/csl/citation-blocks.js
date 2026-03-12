@@ -1,4 +1,8 @@
 import { extractClosedBracketRanges } from "../document/brackets.js";
+import {
+  createControlledCitationPattern,
+  unescapeControlledCitationPayload,
+} from "./controlled-citations.js";
 
 /**
  * 功能：解析严格合法的 CSL 引用块，仅接受 `[@key]` 或 `[@a; @b]` 形式。
@@ -53,6 +57,65 @@ export function collectValidCitationBlocksFromMarkdown(markdown, isKnownKey) {
 }
 
 /**
+ * 功能：从受控 citation 注释中提取严格合法且 key 可解析的 citation block。
+ * 输入：Markdown 文本、用于校验 key 是否存在的函数。
+ * 输出：返回来自受控 citation 块的引用源数组。
+ */
+export function collectValidControlledCitationBlocksFromMarkdown(markdown, isKnownKey) {
+  const source = String(markdown || "");
+  const pattern = createControlledCitationPattern();
+  const validBlocks = [];
+  let match;
+
+  while ((match = pattern.exec(source)) !== null) {
+    const rawCitationBlock = unescapeControlledCitationPayload(match[1]);
+    const keys = parseStrictCitationKeys(rawCitationBlock);
+    if (!keys || !keys.every((key) => isKnownKey(key))) {
+      continue;
+    }
+
+    validBlocks.push({
+      range: {
+        start: match.index,
+        end: match.index + match[0].length,
+        text: rawCitationBlock,
+      },
+      keys,
+      sourceType: "controlled",
+    });
+  }
+
+  return validBlocks;
+}
+
+/**
+ * 功能：统一提取当前 Markdown 中可参与后续流程的引用源。
+ * 说明：同时识别正文里的严格 `[@key]` 块与受控 citation 注释中的原始 `[@key]`。
+ * 输入：Markdown 文本、用于校验 key 是否存在的函数。
+ * 输出：按文档出现顺序返回统一引用源数组。
+ */
+export function collectCitationSourcesFromMarkdown(markdown, isKnownKey) {
+  const source = String(markdown || "");
+  const visibleBlocks = collectValidCitationBlocksFromMarkdown(source, isKnownKey).map((block) => ({
+    ...block,
+    sourceType: "visible",
+  }));
+  const controlledBlocks = collectValidControlledCitationBlocksFromMarkdown(source, isKnownKey);
+
+  return [...visibleBlocks, ...controlledBlocks].sort((left, right) => {
+    if (left.range.start !== right.range.start) {
+      return left.range.start - right.range.start;
+    }
+
+    if (left.sourceType === right.sourceType) {
+      return 0;
+    }
+
+    return left.sourceType === "visible" ? -1 : 1;
+  });
+}
+
+/**
  * 功能：按首次出现顺序从合法 citation block 中提取唯一 key 列表。
  * 输入：合法 citation block 数组。
  * 输出：去重后且保留首次出现顺序的 key 数组。
@@ -81,7 +144,8 @@ export function collectUniqueCitationKeys(validCitationBlocks) {
  * 输出：若存在问题则返回首个问题描述，否则返回 null。
  */
 export function findFirstInvalidCitationProblem(markdown, isKnownKey) {
-  const ranges = extractClosedBracketRanges(String(markdown || ""));
+  const source = String(markdown || "");
+  const ranges = extractClosedBracketRanges(source);
 
   for (const range of ranges) {
     if (!range.text.includes("@")) {
@@ -102,6 +166,28 @@ export function findFirstInvalidCitationProblem(markdown, isKnownKey) {
         type: "unknown-key",
         key: unknownKey,
         blockText: range.text,
+      };
+    }
+  }
+
+  const controlledPattern = createControlledCitationPattern();
+  let match;
+  while ((match = controlledPattern.exec(source)) !== null) {
+    const rawCitationBlock = unescapeControlledCitationPayload(match[1]);
+    const keys = parseStrictCitationKeys(rawCitationBlock);
+    if (!keys) {
+      return {
+        type: "invalid-block",
+        blockText: rawCitationBlock,
+      };
+    }
+
+    const unknownKey = keys.find((key) => !isKnownKey(key));
+    if (unknownKey) {
+      return {
+        type: "unknown-key",
+        key: unknownKey,
+        blockText: rawCitationBlock,
       };
     }
   }

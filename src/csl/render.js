@@ -2,15 +2,17 @@ import { toCslItem } from "./item.js";
 import { getPluginRequire } from "./runtime.js";
 import { extractClosedBracketRanges } from "../document/brackets.js";
 import { collectValidCitationBlocksFromRanges, parseStrictCitationKeys } from "./citation-blocks.js";
+import {
+  CITATION_END_MARKER,
+  CITATION_START_MARKER,
+  createControlledCitationPattern,
+  escapeControlledCitationPayload,
+  unescapeControlledCitationPayload,
+} from "./controlled-citations.js";
 
 const pluginRequire = getPluginRequire();
 const { Cite } = pluginRequire("@citation-js/core");
-const CITATION_START_MARKER = "<!-- bibtex-citation:citation:start ";
-const CITATION_END_MARKER = "<!-- bibtex-citation:citation:end -->";
-const CONTROLLED_CITATION_PATTERN = new RegExp(
-  `${escapeRegex(CITATION_START_MARKER)}([\\s\\S]*?) -->([\\s\\S]*?)${escapeRegex(CITATION_END_MARKER)}`,
-  "g",
-);
+const CONTROLLED_CITATION_PATTERN = createControlledCitationPattern();
 
 /**
  * 功能：把当前文档中严格匹配 `[@key; @other]` 的合法引用块渲染为 CSL 文中引用。
@@ -80,7 +82,7 @@ export function restoreCitationMarkdown(markdown) {
   let restoredKeys = 0;
 
   const nextMarkdown = source.replace(CONTROLLED_CITATION_PATTERN, (_, rawCitationBlock) => {
-    const restoredBlock = unescapeCommentPayload(rawCitationBlock);
+    const restoredBlock = unescapeControlledCitationPayload(rawCitationBlock);
     const keys = parseStrictCitationKeys(restoredBlock) || [];
     restoredBlocks += 1;
     restoredKeys += keys.length;
@@ -110,25 +112,7 @@ function createRenderResult(markdown, changed = false, renderedBlocks = 0, rende
  * 输出：可直接写回 Markdown 的受控 citation 块字符串。
  */
 function buildControlledCitationBlock(rawCitationBlock, renderedCitationHtml) {
-  return `${CITATION_START_MARKER}${escapeCommentPayload(rawCitationBlock)} -->${renderedCitationHtml}${CITATION_END_MARKER}`;
-}
-
-/**
- * 功能：清洗将要写入 HTML 注释的原始 citation block，避免意外闭合注释。
- * 输入：原始 citation block 文本。
- * 输出：可安全放进注释的字符串。
- */
-function escapeCommentPayload(text) {
-  return String(text || "").replace(/-->/g, "--&gt;");
-}
-
-/**
- * 功能：把受控注释中的原始 citation payload 恢复为可写回 Markdown 的文本。
- * 输入：受控注释中记录的 citation payload。
- * 输出：还原后的 citation block。
- */
-function unescapeCommentPayload(text) {
-  return String(text || "").replace(/--&gt;/g, "-->");
+  return `${CITATION_START_MARKER}${escapeControlledCitationPayload(rawCitationBlock)} -->${renderedCitationHtml}${CITATION_END_MARKER}`;
 }
 
 /**
@@ -223,8 +207,4 @@ function sortCitationKeys(keys, citationOrder) {
     const rightOrder = citationOrder.has(right) ? citationOrder.get(right) : Number.MAX_SAFE_INTEGER;
     return leftOrder - rightOrder;
   });
-}
-
-function escapeRegex(text) {
-  return String(text).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

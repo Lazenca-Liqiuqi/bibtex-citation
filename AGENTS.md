@@ -57,7 +57,7 @@
 - 最近工作已从 `v0.2.5` 的引用统计收敛继续推进到 CSL citation 渲染：当前支持外部 `CSL File`、严格 citation block 渲染、同作者同年稳定消歧与上标 HTML 输出
 - 当前候选栏样式、点击选择、回车插入与越界修正已基本稳定；当前开发重点已从建议交互逐步转向 CSL 引用工作流与后续 bibliography 生成
 - 当前设置页已支持单个 `CSL File` 路径，并复用 `Path Base` 的三种解析模式；citation 渲染在点击按钮时懒加载，不再阻塞插件启动
-- 当前已接入 bibliography MVP：可从当前文档中仍保留 `@key` 的严格合法 citation block 生成、更新或删除文末受控参考文献块，但这条链路仍受“替换式 citation 渲染会抹掉 key”这一结构限制
+- 当前已接入 bibliography MVP：可从正文里的严格 `[@key]` 与受控 citation 块中提取 key，生成、更新或删除文末受控参考文献块
 
 ### 已知实现特征
 
@@ -100,9 +100,10 @@
 - bibliography 当前使用文末受控块 `<!-- bibtex-citation:bibliography:start --> ... <!-- bibtex-citation:bibliography:end -->` 做重复更新；不要改成每次都盲目追加一份新参考文献表
 - bibliography 当前还支持显式删除受控块；删除功能只删除本插件生成的受控 bibliography，不会删除用户手写的普通 `## References` 段落
 - bibliography 相关内部命名当前统一使用 `upsert` 语义，例如 `upsertCurrentDocumentBibliography()` 与 `upsertBibliographyMarkdown()`；后续新增逻辑优先沿用这套命名
+- 统一引用源提取当前同时识别两类来源：正文里直接可见的严格 `[@key]` 与受控 citation 注释中保存的原始 `[@key]`；bibliography、当前文档引用统计与相关校验都应优先复用这套提取器
 - 执行 `Render Citations` 与 `Insert / Update Bibliography` 前，当前会独立重新扫描全文；只要任意闭合方括号块中出现未知 key 或非严格 CSL 语法，就直接报错并停止
 - HTML 注释 `<!-- ... -->` 中的 `[@key]` 当前会在闭合块扫描阶段被整体忽略；这条规则同时影响引用统计、CSL 校验、citation 渲染和 bibliography 提取
-- 侧边栏按钮当前布局约定是：`Refresh Cache` 与 `Render Citations` 各占整行，`Insert / Update Bibliography` 与 `删除` 同行显示，其中 bibliography 按钮约占 70%，删除按钮约占 30%
+- 侧边栏按钮当前布局约定是：`Refresh Cache` 独占一行，`Render Citations` 与 `恢复` 同行七三开，`Insert / Update Bibliography` 与 `删除` 同行七三开
 - 不要尝试从已经渲染完成的 `(Smith, 2024)`、`[1]`、`<sup>1</sup>` 逆向解析回 `@key`；bibliography 与 citation 的长期联动必须保留原始 key 作为持久真源
 - 本地 `tests/` 目录当前仅作为临时开发测试区使用，并被 `.gitignore` 整体忽略；不要在 README、package.json 或发布说明中把其中脚本当成受支持的仓库接口
 - README 当前包含一张“当前支持的 CSL 特性”表；若后续继续扩 locator、note-style 或 bibliography，需同步更新这张表，避免对外能力描述过度
@@ -111,8 +112,8 @@
 
 ### 当前优先事项
 
-- 在 Typora 真机里继续回归 `CSL File` 路径配置、侧边栏按钮、citation 渲染与插件启动稳定性
-- 继续完善 bibliography 工作流，优先解决 `Render Citations` 会抹掉原始 `@key` 与参考文献更新之间的结构冲突
+- 在 Typora 真机里继续回归 `CSL File` 路径配置、侧边栏按钮、citation 渲染/恢复与插件启动稳定性
+- 继续完善 bibliography 工作流，优先让更多流程直接复用受控 citation 块中的原始 `@key`
 - 若继续扩展 CSL 能力，优先评估 locator、复杂 citation cluster 与 note-style 的支持方式，并同步更新 README 的支持矩阵
 - 持续验证活动栏 BibTeX 面板、显示语言切换、当前文档引用统计与 `Refresh Cache` 的联动是否稳定
 
@@ -121,7 +122,7 @@
 - 继续细化 [`src/plugin.js`](C:\Users\pc\.typora\community-plugins\plugins\bibtex-citation\src\plugin.js) 的装配职责，必要时再抽出更清晰的启动/注册层
 - 为 BibTeX 解析与检索排序提取更细的纯函数，降低对 Typora 运行时的耦合，便于测试
 - 继续补齐 BibTeX 到 CSL-JSON 的字段映射，优先关注 `booktitle`、更完整日期、`editor` 与 `volume/issue/page` 这类会影响排序和样式兼容性的字段
-- 若后续重构 citation 渲染，优先考虑“受控 citation 块中保留原始 `[@key]`”这条路线，而不是依赖对最终渲染文本做逆向猜测
+- 若后续继续扩展 citation 工作流，优先围绕受控 citation 块增加更新、提取与批量恢复能力，而不是依赖对最终渲染文本做逆向猜测
 - 若继续调整侧边栏按钮排布，优先在 `style.css` 中通过按钮附加类控制局部宽度，不要再把全部按钮统一改成多列网格
 - 增加至少一层手工验证清单或自动化测试脚本，覆盖：
   - 多个 `.bib` 文件加载成功
