@@ -6,7 +6,10 @@
 
 本项目 fork 自 `adam-coates/typora-plugin-zotero`，并在此基础上逐步调整为面向本地 BibTeX 文件的引用工作流。
 
-当前文档对应发布版本：`0.2.10`。
+![Version](https://img.shields.io/badge/version-v0.2.10-2f6feb)
+![Platform](https://img.shields.io/badge/platform-Windows-1f883d)
+![Node](https://img.shields.io/badge/node-%3E%3D22-8a2be2)
+![Typora Plugin](https://img.shields.io/badge/Typora-Community%20Plugin-0a7ea4)
 
 ## 功能概览
 
@@ -14,10 +17,7 @@
 - 支持配置单个本地 `.csl` 文件作为引用样式
 - 支持按 `citation key`、标题、作者、期刊、年份等字段搜索
 - 在 Typora 的方括号引用语法中输入 `@query` 触发候选列表
-- 在左侧活动栏提供 BibTeX 面板按钮，可查看当前配置概览、当前文档引用统计并手动刷新缓存
-- 支持把当前文档中严格合法的 `[@key]` / `[@a; @b]` 引用块渲染为文中引用
-- 支持根据正文中的 `[@key]` 与受控 citation 块插入或更新参考文献表
-- 支持删除由本插件生成的受控参考文献块
+- 在左侧活动栏提供 BibTeX 面板按钮，可查看当前配置概览、当前文档引用统计并执行缓存刷新、citation 渲染/恢复与 bibliography 更新
 - 支持在插件设置中切换 `English` 与 `简体中文` 两种界面语言
 - 多个 BibTeX 路径支持逐条添加、编辑、删除
 - 相对路径支持多种解析基准模式
@@ -27,6 +27,7 @@
 
 - Typora
 - Typora Community Plugin Framework
+- Node.js `>=22`（用于在插件目录下执行 `npm install`）
 - 一个或多个本地 `.bib` 文件
 - 如需使用 `Render / Update Citations / 渲染/更新引用`，还需要一个可读取的本地 `.csl` 文件
 
@@ -40,19 +41,12 @@
 
 ### 安装插件
 
-将本仓库克隆或复制到 Typora 插件目录，并确保插件目录名为 `bibtex-citation`。
+将本仓库克隆或复制到 Typora Community Plugin Framework 的插件目录，并确保插件目录名为 `bibtex-citation`。
 
-#### Windows
+下面的示例以 Windows 上的 Typora Community Plugin Framework 目录为准：
 
 ```powershell
-cd $env:UserProfile\.typora\community-plugins\
-git clone https://github.com/Lazenca-Liqiuqi/bibtex-citation.git bibtex-citation
-```
-
-#### macOS / Linux
-
-```bash
-cd ~/.config/Typora/plugins/plugins/
+cd $env:UserProfile\.typora\community-plugins\plugins\
 git clone https://github.com/Lazenca-Liqiuqi/bibtex-citation.git bibtex-citation
 ```
 
@@ -147,22 +141,21 @@ D:/Literature/shared.bib
 
 候选列表插入这一步只会写入引用键，不会自动展开完整参考文献格式，也不会修改原始 `.bib` 文件。
 
-### 4. 使用侧边栏 BibTeX 面板
+### 4. 使用侧边栏 BibTeX 面板与 CSL 操作
 
-启用 Typora Community Plugin Framework 的活动栏后，左侧会出现一个新的 BibTeX 图标按钮。点击后可打开插件侧边栏面板，用于：
+启用 Typora Community Plugin Framework 的活动栏后，左侧会出现一个新的 BibTeX 图标按钮。点击后可打开插件侧边栏面板，用于查看当前配置与文档状态，并执行以下操作：
 
-- 查看当前 `Path Base`
-- 查看当前 `CSL File`
-- 查看已配置的 BibTeX 文件数量
-- 查看当前已索引条目数量
-- 查看当前文档中的引用统计（中文界面显示为“共 x 条 / y 次”）
-- 手动执行 `Refresh Cache`
-- 手动执行 `Render / Update Citations / 渲染/更新引用`
-- 手动执行 `Restore Citations / 恢复引用`
-- 手动执行 `Insert / Update Bibliography / 插入/更新参考文献`
-- 手动执行 `Remove Bibliography / 删除参考文献`
+- `Refresh Cache`
+- `Render / Update Citations / 渲染/更新引用`
+- `Restore Citations / 恢复引用`
+- `Insert / Update Bibliography / 插入/更新参考文献`
+- `Remove Bibliography / 删除参考文献`
+
+面板同时会显示当前 `Path Base`、`CSL File`、已配置 BibTeX 文件数量、已索引条目数量和当前文档中的引用统计（中文界面显示为“共 x 条 / y 次”）。
 
 当你修改 `Path Base` 或 BibTeX 文件列表后，侧边栏中的 `Indexed Entries` 会先显示“待刷新”。此时如果你手动点击 `Refresh Cache`，或直接在文档里输入 `[@query` 触发建议检索，插件都会重新读取文献库并把已索引条目数恢复为真实值。
+
+#### 渲染或更新 citation
 
 `Render / Update Citations / 渲染/更新引用` 当前会处理两类引用源：正文里严格合法的 CSL 引用块，以及已经由本插件生成的受控 citation 块。可见引用块仍然要求整段内容完全匹配 `[@key]` 或 `[@key1; @key2]` 这一类形式；同时需要你先在设置里配置一个可读取的 `.csl` 文件。比如：
 
@@ -194,6 +187,8 @@ D:/Literature/shared.bib
 
 如果当前文档任意正文闭合引用块中包含未收录于文献库的 citation key，或者闭合块本身不是严格合法的 CSL 语法，那么“渲染/更新引用”和“插入/更新参考文献”都会直接报错并停止，不再跳过非法块后继续处理其他内容。
 
+#### 插入或更新参考文献
+
 `Insert / Update Bibliography / 插入/更新参考文献` 会从当前文档中两类引用源提取 key：
 
 - 正文里直接可见的严格 `[@key]` / `[@a; @b]`
@@ -215,9 +210,17 @@ D:/Literature/shared.bib
 - 因此在当前版本中，先渲染引用再插入/更新参考文献也是可行的
 - 如果你更换了 `CSL File`，现在也可以直接再次执行“渲染/更新引用”，不需要先恢复成原始 `[@key]`
 
+#### 恢复 citation 与删除 bibliography
+
 `Remove Bibliography / 删除参考文献` 只会删除这类由本插件生成的受控参考文献块，不会删除你手写的普通 `## References` 段落。
 
 `Restore Citations / 恢复引用` 会把这类受控 citation 块重新还原成原始的 `[@key]` 或 `[@a; @b]`。
+
+#### 当前限制
+
+- 当前只接受严格合法且 key 全部存在于文献库中的 citation block；任意闭合引用块只要出现未知 key 或非法 CSL 语法，相关 CSL 操作就会直接停止
+- 前缀说明、locator、suffix / 更复杂 citation cluster 语法与 note-style citation 目前仍未支持
+- 渲染输出优先使用 CSL 的 `html` 结果，因此某些样式可能会写入 HTML 实体，例如 `&#38;`
 
 ## 当前支持的 CSL 特性
 
@@ -239,11 +242,7 @@ D:/Literature/shared.bib
 | 脚注 / 尾注 note-style citation | 暂不支持 | 当前实现是原地替换正文，不会自动创建脚注结构 |
 | 插入或更新 bibliography | 已支持 | 会同时读取正文里的 `[@key]` 与受控 citation 块，再在文档末尾写入受控参考文献块 |
 
-补充说明：
-
-- 当前渲染输出优先使用 CSL 的 `html` 结果，因此某些样式可能会写入 HTML 实体，例如 `&#38;`
-- 对大多数普通 author-date / numeric 样式，这不会影响 Typora 中的显示效果
-- 当前只接受严格合法且 key 全部存在于文献库中的 citation block；如果文档中任意闭合引用块包含未知 key，或闭合块本身不是严格合法的 CSL 语法，相关 CSL 操作会直接报错并停止
+补充说明：对大多数普通 author-date / numeric 样式，HTML 输出不会影响 Typora 中的显示效果。
 
 ## 相对路径解析规则
 
@@ -288,31 +287,30 @@ secondary.bib
 
 ## 常见排查
 
-### 在方括号里输入 `@query` 后没有出现候选项
+### 候选与检索
 
-- 确认 Typora Community Plugin Framework 已正确启用
-- 确认 `BibTeX Citations` 插件已启用
-- 确认 `BibTeX Files` 中填写的路径真实存在且可读取
-- 确认你当前是在未闭合的方括号引用里输入，例如 `[@smith`
-- 如果使用相对路径，确认路径是相对于当前 Markdown 文件目录而不是其他目录
+- 若在方括号里输入 `@query` 后没有出现候选项，先确认 Typora Community Plugin Framework 和 `BibTeX Citations` 插件都已启用
+- 确认你当前是在未闭合的方括号引用里输入，例如 `[@smith`，而不是正文里的裸 `@smith`
+- 若检索结果不完整或不准确，检查 `.bib` 文件是否为常见 BibTeX 写法，以及条目是否包含 `title`、`author`、`year`、`journal`、`journaltitle`、`booktitle`、`publisher` 等常见字段
+- 若多个文件中存在同名 `citation key`，最终会以配置顺序更靠前的文件为准
 
-### 检索结果不完整或不准确
+### 路径与文件
 
-- 检查 `.bib` 文件是否为常见 BibTeX 写法
-- 检查条目是否包含 `title`、`author`、`year`、`journal`、`journaltitle`、`booktitle`、`publisher` 等常见字段
-- 检查是否存在重复的 `citation key`
+- 确认 `BibTeX Files` 列表中对应路径仍然存在，且文件扩展名为 `.bib`
+- 若路径没有生效，优先检查拼写、权限问题，以及它是否按照当前 `Path Base` 解析到预期目录
+- 若使用相对路径，确认它是相对于当前 Markdown 文件目录、Typora 当前打开目录，还是只接受绝对路径，这取决于你当前选择的 `Path Base`
+- 缺失或不可读取的 BibTeX 文件会被跳过，并在控制台输出警告
 
-### 某个 BibTeX 文件没有生效
+### Citation 与 CSL
 
-- 检查多个路径之间的分隔是否正确
-- 检查文件扩展名是否为 `.bib`
-- 检查路径是否存在拼写错误或权限问题
-- 插件会跳过缺失或不可读取的 BibTeX 文件，并在控制台给出警告
+- 若 `Render / Update Citations` 或 `Insert / Update Bibliography` 失败，先确认已经配置了可读取的 `.csl` 文件
+- 这两类 CSL 操作只接受严格合法的 `[@key]` / `[@a; @b]`；只要文档中任意闭合引用块出现未知 key、locator、前缀说明或更复杂语法，操作就会直接停止
+- 如果你更换了 `CSL File` 后想刷新已经渲染过的 citation，直接再次执行 `Render / Update Citations` 即可，不需要先恢复
+- 若 bibliography 结果异常，优先确认正文里的严格 `[@key]` 和受控 citation 块中的原始 `[@key]` 是否仍然存在
 
 ## 说明
 
 - 插件 ID：`bibtex-citation`
 - 插件名称：`BibTeX Citations`
-- 当前版本：`0.2.10`
 - 支持平台：Windows、Linux、macOS
 - 本仓库和本地插件目录都应使用名称 `bibtex-citation`
