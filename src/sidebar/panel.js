@@ -2,6 +2,7 @@ const { Notice, SidebarPanel } = window[Symbol.for("typora-plugin-core@v2")];
 
 import { PATH_BASE_MODE } from "../constants.js";
 import { parseBibFileList } from "../bibtex/settings.js";
+import { summarizeText } from "../utils/html.js";
 
 /**
  * 功能：提供 BibTeX 配置概览侧边栏，并在活动栏注册入口按钮。
@@ -330,14 +331,5 @@ function formatCitationStateError(texts, error) {
     return texts.invalidCitationPrefix + error.key;
   }
 
-  return texts.invalidCitationBlockPrefix + summarizeCitationBlock(error.blockText);
-}
-
-function summarizeCitationBlock(blockText) {
-  const normalized = String(blockText || "").replace(/\s+/g, " ").trim();
-  if (normalized.length <= 80) {
-    return normalized;
-  }
-
-  return normalized.slice(0, 77) + "...";
+  return texts.invalidCitationBlockPrefix + summarizeText(error.blockText);
 }

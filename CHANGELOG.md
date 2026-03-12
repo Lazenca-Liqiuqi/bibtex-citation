@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.3.0 - 2026-03-12
+
+- 提取共享文本摘要工具，消除 `src/plugin.js` 与 `src/sidebar/panel.js` 中重复的 citation 错误摘要逻辑，降低后续维护时的分叉风险
+- 修正文案与元数据一致性：更新 `manifest.json` 中对触发方式的描述，并同步 `README.md` 的平台 badge 以匹配当前支持矩阵
+- 对齐发布状态文件：更新 `package.json`、`package-lock.json`、`AGENTS.md` 与 `README.md` 中的版本信息，并把 `AGENTS.md` 中的本地 smoke 命令改写为“仅本地夹具存在时可用”
+
 ## 0.2.11 - 2026-03-12
 
 - 重构 `AGENTS.md` 的项目记忆结构，按模块职责、长期约束与分组资源重写内容，清理与项目无关或低价值的零碎历史信息
