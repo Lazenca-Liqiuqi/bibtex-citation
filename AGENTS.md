@@ -2,10 +2,10 @@
 
 ## 项目基本信息
 
-- 项目名称：`bibtex-citation`
-- 当前工作区目录名与 Git 远程仓库名均已迁移为 `bibtex-citation`
+- 项目名称：`typora-plugin-bibtex-citation`
+- 当前目标仓库名为 `typora-plugin-bibtex-citation`；但插件运行标识、受控注释前缀与当前工作区目录仍可能暂时保留 `bibtex-citation`
 - 项目类型：Typora Community Plugin 插件
-- 当前最新已发布版本：`0.3.0`
+- 当前最新已发布版本：`0.3.1`
 - 主要功能：在 Typora 的方括号引用语法中输入 `@query` 时，从配置的多个 BibTeX 文件中检索文献条目并插入引用键
 - 运行依赖：
   - Typora Community Plugin Framework
@@ -27,7 +27,7 @@
 - [`src/constants.js`](src/constants.js) / [`src/i18n.js`](src/i18n.js)：共享常量与文案层，被设置页、侧边栏和主控装配共同依赖
 - [`src/utils/`](src/utils)：通用小工具，当前主要提供 HTML、文本压缩与错误摘要辅助，尽量保持无宿主耦合
 - [`style.css`](style.css)：建议列表、侧边栏和活动栏按钮的样式层；与宿主 Typora 样式存在直接耦合，改动时要留意覆盖关系
-- [`manifest.json`](manifest.json) / [`package.json`](package.json)：插件元数据与依赖入口，分别影响 Typora 识别和本地 Node 运行环境
+- [`manifest.json`](manifest.json) / [`package.json`](package.json)：插件元数据与依赖入口，分别影响 Typora 识别和本地 Node 运行环境；当前仓库/包名与插件 `id` 不一定相同
 - [`README.md`](README.md)：对外使用说明；能力边界、按钮语义和支持矩阵变更后要同步更新
 
 ## 技术栈与技术路线

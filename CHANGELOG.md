@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.3.1 - 2026-03-12
+
+- 将仓库与包名调整为 `typora-plugin-bibtex-citation`，同时保留 Typora 插件 `id` 与受控 citation 注释前缀 `bibtex-citation`，避免破坏现有文档兼容性
+- 更新 README 与 AGENTS 中的项目名称、安装说明和仓库状态说明，使“仓库名已改、插件运行标识暂不改”的现状更加清晰
+- 同步 `package.json`、`package-lock.json`、`manifest.json`、`README.md` 与 `AGENTS.md` 的发布版本到 `0.3.1`
+
 ## 0.3.0 - 2026-03-12
 
 - 提取共享文本摘要工具，消除 `src/plugin.js` 与 `src/sidebar/panel.js` 中重复的 citation 错误摘要逻辑，降低后续维护时的分叉风险

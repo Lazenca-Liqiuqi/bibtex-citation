@@ -1,12 +1,12 @@
-# bibtex-citation
+# typora-plugin-bibtex-citation
 
-`bibtex-citation` 是一个 Typora Community Plugin 插件，用于在 Typora 的方括号引用语法中输入 `@query` 时，从一个或多个已配置的本地 BibTeX 文件中检索文献条目，并插入对应的引用键；也支持基于单个本地 `.csl` 文件把严格合法的 citation block 渲染为文中引用。
+`typora-plugin-bibtex-citation` 是一个 Typora Community Plugin 插件，用于在 Typora 的方括号引用语法中输入 `@query` 时，从一个或多个已配置的本地 BibTeX 文件中检索文献条目，并插入对应的引用键；也支持基于单个本地 `.csl` 文件把严格合法的 citation block 渲染为文中引用。
 
 插件只会读取你在设置中配置的 `.bib` 文件与 `.csl` 文件，并在文档中插入 citation key 或渲染后的文中引用。它不会修改任何 `.bib` 文件，也不依赖外部参考文献管理器或 SQLite。
 
 本项目 fork 自 `adam-coates/typora-plugin-zotero`，并在此基础上逐步调整为面向本地 BibTeX 文件的引用工作流。
 
-![Version](https://img.shields.io/badge/version-v0.3.0-2f6feb)
+![Version](https://img.shields.io/badge/version-v0.3.1-2f6feb)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-1f883d)
 ![Node](https://img.shields.io/badge/node-%3E%3D22-8a2be2)
 ![Typora Plugin](https://img.shields.io/badge/Typora-Community%20Plugin-0a7ea4)
@@ -41,13 +41,13 @@
 
 ### 安装插件
 
-将本仓库克隆或复制到 Typora Community Plugin Framework 的插件目录，并确保插件目录名为 `bibtex-citation`。
+将本仓库克隆或复制到 Typora Community Plugin Framework 的插件目录。若你后续也同步重命名了 GitHub 仓库，推荐插件目录名与仓库名统一为 `typora-plugin-bibtex-citation`；当前插件运行标识 `id` 仍保持为 `bibtex-citation`。
 
 下面的示例以 Windows 上的 Typora Community Plugin Framework 目录为准：
 
 ```powershell
 cd $env:UserProfile\.typora\community-plugins\plugins\
-git clone https://github.com/Lazenca-Liqiuqi/bibtex-citation.git bibtex-citation
+git clone https://github.com/Lazenca-Liqiuqi/typora-plugin-bibtex-citation.git typora-plugin-bibtex-citation
 ```
 
 将插件目录放到正确位置后，请在插件目录下执行一次 `npm install`。当前项目不需要额外构建步骤。
@@ -313,4 +313,5 @@ secondary.bib
 - 插件 ID：`bibtex-citation`
 - 插件名称：`BibTeX Citations`
 - 支持平台：Windows、Linux、macOS
-- 本仓库和本地插件目录都应使用名称 `bibtex-citation`
+- 当前仓库包名推荐使用 `typora-plugin-bibtex-citation`
+- 当前插件运行标识与受控注释前缀仍保持为 `bibtex-citation`
