@@ -102,21 +102,45 @@ export default class BibCitationPlugin extends Plugin {
    * 输入：无。
    * 输出：返回本次插入结果与引用 key 统计。
    */
-  async insertCurrentDocumentBibliography() {
+  async upsertCurrentDocumentBibliography() {
     this.ensureNoInvalidCitationKeysForCslAction();
     const markdown = window.editor?.getMarkdown?.() || "";
     const entries = this.getBibEntries();
-    const [{ ensureCslTemplate }, { insertBibliographyMarkdown }] = await Promise.all([
+    const [{ ensureCslTemplate }, { upsertBibliographyMarkdown }] = await Promise.all([
       import("./csl/assets.js"),
       import("./csl/bibliography.js"),
     ]);
     const templateName = ensureCslTemplate(this);
-    const result = insertBibliographyMarkdown(
+    const result = upsertBibliographyMarkdown(
       markdown,
       entries,
       templateName,
       this.i18n.t.sidebar.bibliographyHeading,
     );
+    if (!result.changed) {
+      return result;
+    }
+
+    const reloadContent = window.File?.reloadContent;
+    if (typeof reloadContent !== "function") {
+      throw new Error(this.i18n.t.sidebar.renderReloadUnavailable);
+    }
+
+    reloadContent(result.markdown, false, true, false, true);
+    this.resetDocumentState();
+    this.sidebarPanel?.render?.();
+    return result;
+  }
+
+  /**
+   * 功能：删除当前文档中由本插件生成的受控参考文献块。
+   * 输入：无。
+   * 输出：返回本次删除结果。
+   */
+  async removeCurrentDocumentBibliography() {
+    const markdown = window.editor?.getMarkdown?.() || "";
+    const { removeBibliographyMarkdown } = await import("./csl/bibliography.js");
+    const result = removeBibliographyMarkdown(markdown);
     if (!result.changed) {
       return result;
     }

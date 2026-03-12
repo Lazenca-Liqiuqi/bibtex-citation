@@ -2,34 +2,40 @@
 
 ## 日期
 
-- 2026-03-11
+- 2026-03-12
 
 ## 已完成
 
-- 为插件发布 `v0.2.7`，版本文件、CHANGELOG、README 与项目记忆已同步到 bibliography MVP 阶段
-- 为 bibliography 增加 MVP：当前可从文档中仍保留 `@key` 的严格合法 citation block 生成或更新文末受控参考文献块
-- 为 bibliography 补齐第一批关键 CSL 映射字段，优先修复会议论文与章节类条目缺失 `booktitle`、`editor`、卷期页后只剩题名的问题
-- 将 CSL 文档改写行为统一为“遇到非法 citation key 直接报错并停止”，不再对混合合法/非法 key 做跳过式容错
-- 明确 bibliography 的长期路线：不要尝试从已经渲染完成的 citation 文本逆向恢复 `@key`，后续应优先保留原始 key 作为持久真源
+- 修复了 CSL 动作前校验：现在 `Render Citations` 和 `Insert / Update Bibliography` 会重新扫描全文，遇到未知 key 或非法 citation block 会直接报错并停止
+- 修复了 HTML 注释中的 `[@key]` 被误计入扫描的问题；注释里的 citation 现在不会参与引用统计、CSL 校验、citation 渲染或 bibliography 提取
+- 统一了 bibliography 的对外与内部语义：界面文案改为“插入/更新参考文献”，内部命名改为 `upsert bibliography`
+- 新增“删除参考文献”功能，只删除本插件生成的受控 bibliography 块，不删除用户手写的普通参考文献段落
+- 收紧了侧边栏文案与布局：去掉标题区、合并底部提示，并把“插入/更新参考文献”和“删除”放到同一行，当前按钮宽度约为七三开
 
 ## 主要方法与工具
 
-- `git status --short --branch`
-- `Get-Content AGENTS.md`
-- `Get-Content LAST_RUN.md`
-- `Get-Content README.md`
-- `Get-ChildItem -Recurse .\\src -Filter *.js | ForEach-Object { node --check $_.FullName }`
-- 本地 `node --input-type=module -` 最小样例回归：验证 `apa.csl` / `nature.csl` citation、bibliography 与 `inproceedings` 条目输出
+- `Get-Content src\\plugin.js`
+- `Get-Content src\\document\\brackets.js`
+- `Get-Content src\\csl\\citation-blocks.js`
+- `Get-Content src\\csl\\bibliography.js`
+- `Get-Content src\\sidebar\\panel.js`
+- `Get-Content src\\i18n.js`
+- `Get-Content style.css`
+- `rg -n "insertBibliography|upsertBibliography|removeBibliography|citation block" src README.md`
+- `node --check src\\plugin.js`
+- `node --check src\\sidebar\\panel.js`
+- `node --check src\\csl\\bibliography.js`
+- `node --check src\\i18n.js`
+- `node --input-type=module -` 最小样例：验证 HTML 注释忽略、受控 bibliography 删除行为
 - `apply_patch`
-- Context7：核对 `Citation.js` / `@citation-js/plugin-csl` 的排序、HTML 输出与 bibliography 机制
 
 ## 当前任务
 
-- bibliography 的基础插入能力已经接通，但当前仍与“替换式 citation 渲染”存在结构冲突：一旦先渲染 citation，文档里就不再保留原始 `@key`
-- 下一步重点不是继续做逆向解析，而是设计如何在 citation 渲染后仍然保留原始 key，供 bibliography 与后续更新复用
+- bibliography 的插入、更新、删除和非法块拦截已经接通，但 citation 仍是“替换式渲染”，执行后会抹掉原始 `@key`
+- 下一步的主线仍然是让 citation 渲染后保留原始 key，避免 bibliography 与后续更新失去持久真源
 
 ## 下次继续
 
-- 设计 citation 的受控块格式，在渲染后保留原始 `[@key]` 作为持久真源
-- 在 Typora 真机中回归 bibliography 受控块的插入、重复更新、非法 key 报错与会议论文条目输出
-- 若继续扩展 CSL 能力，优先评估 locator、复杂 citation cluster 与 note-style 的支持方式，并同步更新 README 的支持矩阵
+- 设计 citation 的受控块格式，在渲染后保留原始 `[@key]`
+- 在 Typora 真机中回归 bibliography 的插入、更新、删除、非法块拦截和注释忽略行为
+- 如需继续调整侧边栏布局，沿用当前“前两个按钮整行、bibliography 与删除同行七三开”的样式约定

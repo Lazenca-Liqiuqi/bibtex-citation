@@ -73,9 +73,18 @@ export class BibCitationSidebarPanel extends SidebarPanel {
         ],
       ]),
       createActions([
-        [t.refreshButton, () => this.handleRefresh()],
-        [t.renderButton, () => this.handleRenderCitations()],
-        [t.insertBibliographyButton, () => this.handleInsertBibliography()],
+        { label: t.refreshButton, onClick: () => this.handleRefresh() },
+        { label: t.renderButton, onClick: () => this.handleRenderCitations() },
+        {
+          label: t.insertBibliographyButton,
+          onClick: () => this.handleUpsertBibliography(),
+          className: "bibtex-sidebar-button-wide",
+        },
+        {
+          label: t.removeBibliographyButton,
+          onClick: () => this.handleRemoveBibliography(),
+          className: "bibtex-sidebar-button-narrow",
+        },
       ]),
       loadError ? createError(t.loadErrorPrefix + loadError) : null,
       citationState.error ? createError(t.invalidCitationPrefix + citationState.error) : null,
@@ -127,9 +136,9 @@ export class BibCitationSidebarPanel extends SidebarPanel {
    * 输入：无。
    * 输出：无返回值。
    */
-  async handleInsertBibliography() {
+  async handleUpsertBibliography() {
     try {
-      const result = await this.plugin.insertCurrentDocumentBibliography();
+      const result = await this.plugin.upsertCurrentDocumentBibliography();
       if (!result.changed) {
         new Notice(this.plugin.i18n.t.sidebar.insertBibliographyNoChanges);
         return;
@@ -142,6 +151,28 @@ export class BibCitationSidebarPanel extends SidebarPanel {
     } catch (error) {
       new Notice(
         this.plugin.i18n.t.sidebar.insertBibliographyErrorPrefix +
+          (error?.message || String(error)),
+      );
+    }
+  }
+
+  /**
+   * 功能：删除当前文档中由本插件生成的受控参考文献块。
+   * 输入：无。
+   * 输出：无返回值。
+   */
+  async handleRemoveBibliography() {
+    try {
+      const result = await this.plugin.removeCurrentDocumentBibliography();
+      if (!result.changed) {
+        new Notice(this.plugin.i18n.t.sidebar.removeBibliographyNoChanges);
+        return;
+      }
+
+      new Notice(this.plugin.i18n.t.sidebar.removeBibliographySuccess);
+    } catch (error) {
+      new Notice(
+        this.plugin.i18n.t.sidebar.removeBibliographyErrorPrefix +
           (error?.message || String(error)),
       );
     }
@@ -181,12 +212,15 @@ function createActions(actions) {
   const wrapper = document.createElement("div");
   wrapper.className = "bibtex-sidebar-actions";
 
-  for (const [label, onClick] of actions) {
+  for (const action of actions) {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "btn btn-default bibtex-sidebar-button";
-    button.textContent = label;
-    button.addEventListener("click", onClick);
+    if (action.className) {
+      button.classList.add(action.className);
+    }
+    button.textContent = action.label;
+    button.addEventListener("click", action.onClick);
     wrapper.append(button);
   }
 
